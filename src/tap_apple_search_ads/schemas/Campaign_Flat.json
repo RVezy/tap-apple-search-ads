@@ -4,8 +4,6 @@
     "adamId",
     "adChannelType",
     "billingEvent",
-    "budgetAmount_currency",
-    "budgetAmount_amount",
     "countriesOrRegions",
     "name",
     "supplySources"
@@ -21,10 +19,10 @@
       "enum": ["IMPRESSIONS", "TAPS"]
     },
     "budgetAmount_currency": {
-      "$ref": "currency.json"
+      "type": ["string", "null"]
     },
     "budgetAmount_amount": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "budgetOrders": {
       "type": "string"
@@ -36,10 +34,10 @@
       "type": "string"
     },
     "dailyBudgetAmount_currency": {
-      "$ref": "currency.json"
+      "type": ["string", "null"]
     },
     "dailyBudgetAmount_amount": {
-      "type": "string"
+      "type": ["string", "null"]
     },
     "deleted": {
       "type": "boolean",
