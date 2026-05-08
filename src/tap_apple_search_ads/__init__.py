@@ -126,10 +126,13 @@ def do_sync(config: Dict[str, Any], catalog: singer.Catalog, state: Dict[str, An
 
 
 def load_private_key(config: Mapping[str, str]) -> str:
-    if "private_key_value" in config:
+    # Truthy checks (not bare `in config`) so meltano-style ${VAR} expansion to an
+    # empty string for an unset env var falls through to the next option, letting
+    # both private_key_value and private_key_file live side-by-side in base config.
+    if config.get("private_key_value"):
         private_key = config["private_key_value"]
 
-    elif "private_key_file" in config:
+    elif config.get("private_key_file"):
         private_key_file = config["private_key_file"]
         private_key = auth.utils.read_private_key_from_file(private_key_file)
 
