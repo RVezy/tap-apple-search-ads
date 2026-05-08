@@ -3,7 +3,7 @@
   "selector": {
     "orderBy": [
       {
-        "field": "countryOrRegion",
+        "field": "countryCode",
         "sortOrder": "ASCENDING"
       }
     ],
@@ -12,9 +12,9 @@
       "limit": 1000
     }
   },
-  "groupBy": ["countryOrRegion", "adminArea"],
+  "groupBy": ["countryCode", "adminArea"],
   "timeZone": "UTC",
   "returnRecordsWithNoMetrics": true,
-  "returnRowTotals": true,
-  "returnGrandTotals": true
+  "returnRowTotals": false,
+  "returnGrandTotals": false
 }
