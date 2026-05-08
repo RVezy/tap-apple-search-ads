@@ -1,22 +1,10 @@
 {
-  "granularity": "WEEKLY",
+  "granularity": "DAILY",
   "selector": {
     "orderBy": [
       {
         "field": "countryOrRegion",
         "sortOrder": "ASCENDING"
-      }
-    ],
-    "conditions": [
-      {
-        "field": "countriesOrRegions",
-        "operator": "CONTAINS_ANY",
-        "values": ["US", "GB"]
-      },
-      {
-        "field": "countryOrRegion",
-        "operator": "IN",
-        "values": ["US"]
       }
     ],
     "pagination": {
