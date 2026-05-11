@@ -1,3 +1,5 @@
+import base64
+import binascii
 import datetime
 import json
 import pathlib
@@ -126,20 +128,31 @@ def do_sync(config: Dict[str, Any], catalog: singer.Catalog, state: Dict[str, An
 
 
 def load_private_key(config: Mapping[str, str]) -> str:
-    # Truthy checks (not bare `in config`) so meltano-style ${VAR} expansion to an
-    # empty string for an unset env var falls through to the next option, letting
-    # both private_key_value and private_key_file live side-by-side in base config.
-    if config.get("private_key_value"):
-        private_key = config["private_key_value"]
+    # The private key is delivered as a single base64-encoded string in
+    # `private_key_value`. Encoding sidesteps multi-line / quoting headaches when
+    # storing the PEM in vault systems, .env files, or Kubernetes secrets that
+    # don't handle embedded newlines cleanly.
+    encoded = config.get("private_key_value")
+    if not encoded:
+        raise TapAppleSearchAdsException(
+            "Missing required config: private_key_value (base64-encoded PEM)"
+        )
 
-    elif config.get("private_key_file"):
-        private_key_file = config["private_key_file"]
-        private_key = auth.utils.read_private_key_from_file(private_key_file)
+    try:
+        # validate=False ignores whitespace/newlines that often sneak in via copy-paste.
+        decoded = base64.b64decode(encoded, validate=False).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError) as exc:
+        raise TapAppleSearchAdsException(
+            "private_key_value is not valid base64: " + str(exc)
+        )
 
-    else:
-        raise TapAppleSearchAdsException("Missing private key configuration parameters")
+    if "BEGIN" not in decoded or "PRIVATE KEY" not in decoded:
+        raise TapAppleSearchAdsException(
+            "private_key_value decoded but does not look like a PEM private key. "
+            "Encode the full PEM (with BEGIN/END lines) as base64."
+        )
 
-    return private_key
+    return decoded
 
 
 class TapAppleSearchAdsException(Exception):
