@@ -1,3 +1,5 @@
+import base64
+import binascii
 import datetime
 import json
 import pathlib
@@ -126,17 +128,38 @@ def do_sync(config: Dict[str, Any], catalog: singer.Catalog, state: Dict[str, An
 
 
 def load_private_key(config: Mapping[str, str]) -> str:
-    if "private_key_value" in config:
-        private_key = config["private_key_value"]
+    # Three accepted shapes, in precedence order. Truthy checks (not bare
+    # `in config`) so meltano-style ${VAR} expansion to an empty string for an
+    # unset env var falls through to the next option, letting all three live
+    # side-by-side in base config.
+    #
+    #   private_key_value_base64  - base64-encoded PEM. Convenient for vault /
+    #                               Kubernetes Secret / .env storage where
+    #                               multi-line values are awkward.
+    #   private_key_value         - raw PEM string (the historical default).
+    #   private_key_file          - path to the PEM on disk.
+    if config.get("private_key_value_base64"):
+        encoded = config["private_key_value_base64"]
+        try:
+            decoded = base64.b64decode(encoded, validate=False).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            raise TapAppleSearchAdsException(
+                "private_key_value_base64 is not valid base64: " + str(exc)
+            )
+        if "BEGIN" not in decoded or "PRIVATE KEY" not in decoded:
+            raise TapAppleSearchAdsException(
+                "private_key_value_base64 decoded but does not look like a PEM "
+                "private key. Encode the full PEM (with BEGIN/END lines)."
+            )
+        return decoded
 
-    elif "private_key_file" in config:
-        private_key_file = config["private_key_file"]
-        private_key = auth.utils.read_private_key_from_file(private_key_file)
+    if config.get("private_key_value"):
+        return config["private_key_value"]
 
-    else:
-        raise TapAppleSearchAdsException("Missing private key configuration parameters")
+    if config.get("private_key_file"):
+        return auth.utils.read_private_key_from_file(config["private_key_file"])
 
-    return private_key
+    raise TapAppleSearchAdsException("Missing private key configuration parameters")
 
 
 class TapAppleSearchAdsException(Exception):

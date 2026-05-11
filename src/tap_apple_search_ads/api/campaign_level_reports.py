@@ -78,6 +78,11 @@ def sync_extended_spend_row(
     report_rows = sync(headers, start_time, end_time, selector_name)
     extended_spend_rows: List[Dict[str, Any]] = []
 
+    # Geo dimensions Apple returns in metadata when the corresponding groupBy is
+    # set in the selector. Carrying them onto each granularity row preserves the
+    # full join key (campaignId + date + geo) for downstream dedup/aggregation.
+    metadata_dimensions = ("countryOrRegion", "countryCode", "adminArea", "locality")
+
     for row in report_rows:
         granularity = row["granularity"]
         metadata = row["metadata"]
@@ -85,15 +90,17 @@ def sync_extended_spend_row(
         for granularity_row in granularity:
             extended_spend_row = dict(granularity_row)
             extended_spend_row["campaignId"] = metadata["campaignId"]
+            for dim in metadata_dimensions:
+                if dim in metadata:
+                    extended_spend_row[dim] = metadata[dim]
             extended_spend_rows.append(extended_spend_row)
 
     return extended_spend_rows
 
 
 def flatten(record: Dict[str, Any]) -> Dict[str, Any]:
-    record["avgCPA"] = json.dumps(record["avgCPA"])
-    record["avgCPM"] = json.dumps(record["avgCPM"])
-    record["avgCPT"] = json.dumps(record["avgCPT"])
-    record["localSpend"] = json.dumps(record["localSpend"])
+    for key in ("avgCPA", "avgCPM", "avgCPT", "localSpend"):
+        if key in record:
+            record[key] = json.dumps(record[key])
 
     return record

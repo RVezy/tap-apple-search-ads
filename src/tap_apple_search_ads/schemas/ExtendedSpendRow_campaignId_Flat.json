@@ -57,6 +57,18 @@
     },
     "campaignId": {
       "type": "integer"
+    },
+    "countryOrRegion": {
+      "type": ["string", "null"]
+    },
+    "countryCode": {
+      "type": ["string", "null"]
+    },
+    "adminArea": {
+      "type": ["string", "null"]
+    },
+    "locality": {
+      "type": ["string", "null"]
     }
   }
 }
